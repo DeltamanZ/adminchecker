@@ -3,66 +3,54 @@ script_dependencies("moonloader")
 script_description("Admin checker, a Martin Show Pidoras")
 script_version(1)
 
-local folder = getWorkingDirectory().."/deltaman/adminChecker/" -- ГµГіГїГ°ГЁГ¬ ГЇГҐГ°ГҐГ¬ГҐГ­Г­ГіГѕ, Г·ГІГ®ГЎ ГЅГІГ®ГІ ГЇГіГІГј ГЄГ Г¦Г¤Г»Г© Г°Г Г§ Г­ГҐ ГЇГЁГ±Г ГІГј 
-local adminlist = folder.."/admins.txt" -- ГІГ®Г¦ГҐ Г±Г Г¬Г®ГҐ
+local folder = getWorkingDirectory().."/deltaman/adminChecker/" -- хуярим переменную, чтоб этот путь каждый раз не писать 
+local adminlist = folder.."/admins.txt" -- тоже самое
 
-local admins = {}  -- Г¬Г Г±Г±ГЁГў Гў ГЄГ®ГІГ®Г°Г»Г© Г§Г ГЄГЁГ­ГҐГ¬ Г Г¤Г¬ГЁГ­Г®Гў
-local online_admins = {} -- Г¬Г Г±ГЁГ±Гў Гў ГЄГ®ГІГ®Г°Г»Г© ГЄГ Г¦Г¤Г»Г© Г°Г Г§ Г§Г ГЄГЁГ¤Г»ГўГ ГІГј Г Г­Г«Г Г©Г­ Г Г¤Г¬ГЁГ­Г®Гў
+local admins = {}  -- массив в который закинем админов
+local online_admins = {} -- масисв в который каждый раз закидывать анлайн админов
 
 function main()
-    while not isSampAvailable() do wait(0) end -- Г¦Г¤ВёГ¬ Г§Г ГЈГ°ГіГ§ГЄГЁ ГЁГЈГ°Г»
-    sampRegisterChatCommand("admins", checkIt) -- Г°ГҐГЈГЁГ±ГІГ°ГЁГ°ГіГҐГ¬ ГЄГ®Г¬Г Г­Г¤Гі ГЁ ГЇГ°ГЁГўГїГ§Г»ГўГ ГҐГ¬ ГЄ ГґГіГ­ГЄГ¶ГЁГЁ checkIt
-    createDirectory(folder) -- Г±Г®Г§Г¤Г ГҐГ¬ ГЇГ ГЇГЄГі, Г  ГІГ® io.open Г­ГҐ ГіГ¬ГҐГҐГІ
-    local file = io.open(adminlist, "a+") -- Г®ГІГЄГ°Г»ГўГ ГҐГ¬ (ГЇГ»ГІГ ГҐГ¬Г±Гї) ГґГ Г©Г« Г± Г Г¤Г¬ГЁГ­Г Г¬ГЁ
-    if file == nil then -- ГҐГ±Г«ГЁ ГґГ Г©Г«Г  Г­ГҐГІ
-        if not doesDirectoryExist(folder) then createDirectory(folder) end -- ГЇГ°Г®ГўГҐГ°ГЁГ¬ Г­Г  ГўГ±ГїГЄГЁГ© Г±Г«ГіГ·Г Г©, ГўГ¤Г°ГіГЈ ГЇГ ГЇГЄГ  Г­ГҐ Г±Г®Г§Г¤Г Г«Г Г±Гј -_-
-        file = io.open(adminlist, "w") -- Г±Г®Г§Г¤Г ГҐГ¬ ГґГ Г©Г« Гў Г°ГҐГ¦ГЁГ¬ГҐ Г§Г ГЇГЁГ±ГЁ
-        file:close() -- Г‡Г ГЄГ°Г»ГўГ ГҐГ¬ ГҐГЈГ®, Г­Г ГµГіГ© Г®Г­ Г­Г Г¬ ГЇГіГ±ГІГ®Г© ГІГ® Г­ГіГ¦ГҐГ­
-    else-- ГҐГ±Г«ГЁ ГҐГ±ГІГј
-        local fileData = file:read("*a") -- Г·ГЁГІГ ГҐГ¬ ГґГ Г©Г«ГЁГЄ, Г§Г ГЇГЁГ±Г»ГўГ ГҐГ¬ ГўГ±ГҐ Гў ГЇГ Г°ГҐГ¬ГҐГ­Г­ГіГѕ
+    while not isSampAvailable() do wait(0) end -- ждём загрузки игры
+    sampRegisterChatCommand("admins", checkIt) -- регистрируем команду и привязываем к функции checkIt
+    createDirectory(folder) -- создаем папку, а то io.open не умеет
+    local file = io.open(adminlist, "a+") -- открываем (пытаемся) файл с админами
+    if file == nil then -- если файла нет
+        if not doesDirectoryExist(folder) then createDirectory(folder) end -- проверим на всякий случай, вдруг папка не создалась -_-
+        file = io.open(adminlist, "w") -- создаем файл в режиме записи
+        file:close() -- Закрываем его, нахуй он нам пустой то нужен
+    else-- если есть
+        local fileData = file:read("*a") -- читаем файлик, записываем все в паременную
         file:close()
-        admins = split(fileData, "\n") -- Г°Г Г§ГЎГЁГўГ ГҐГ¬ Г­Г  Г¬Г Г±Г±ГЁГў ГЇГ® Г±ГЁГ¬ГўГ®Г«Гі ГЇГҐГ°ГҐГ­Г®Г±Г  Г±ГІГ°Г®ГЄГЁ
-        print("{B22222}[AdminChecker]: {FFFFFF}ГЂГ¤Г¬ГЁГ­Г®Гў Г§Г ГЈГ°ГіГ¦ГҐГ­Г®: {008800}"..#admins) -- ГЇГ Г«ГЁГ¬Г±Гї Г± Г Г¤Г¬ГЁГ­ Г·ГҐГЄГҐГ°Г®Г¬ Гў ГЄГ®Г­Г±Г®Г«Гј (Г¬Г®Г¦Г­Г® ГіГ¤Г Г«ГЁГІГј)
+        admins = split(fileData, "\n") -- разбиваем на массив по символу переноса строки
+        print("{B22222}[AdminChecker]: {FFFFFF}Админов загружено: {008800}"..#admins) -- палимся с админ чекером в консоль (можно удалить)
     end
-    wait(-1) -- Г§Г Г±ГІГ ГўГ«ГїГҐГ¬ ГЇГ«Г ГЈГЁГ­ Г¦Г¤Г ГІГј ГўГҐГ·Г­Г®, Г·ГІГ®ГЎ Г­ГҐ Г§Г ГўГҐГ°ГёГЁГ«Г±Гї
+    wait(-1) -- заставляем плагин ждать вечно, чтоб не завершился
     
 end
 
-function checkIt() -- ГІГ  Г±Г Г¬Г Гї ГґГіГ­ГЄГ¶ГЁГї
-
-    local file = io.open(adminlist, "a+") -- Г®ГІГЄГ°Г»ГўГ ГҐГ¬ (ГЇГ»ГІГ ГҐГ¬Г±Гї) ГґГ Г©Г« Г± Г Г¤Г¬ГЁГ­Г Г¬ГЁ
-    if file == nil then -- ГҐГ±Г«ГЁ ГґГ Г©Г«Г  Г­ГҐГІ
-        if not doesDirectoryExist(folder) then createDirectory(folder) end -- ГЇГ°Г®ГўГҐГ°ГЁГ¬ Г­Г  ГўГ±ГїГЄГЁГ© Г±Г«ГіГ·Г Г©, ГўГ¤Г°ГіГЈ ГЇГ ГЇГЄГ  Г­ГҐ Г±Г®Г§Г¤Г Г«Г Г±Гј -_-
-        file = io.open(adminlist, "w") -- Г±Г®Г§Г¤Г ГҐГ¬ ГґГ Г©Г« Гў Г°ГҐГ¦ГЁГ¬ГҐ Г§Г ГЇГЁГ±ГЁ
-        file:close() -- Г‡Г ГЄГ°Г»ГўГ ГҐГ¬ ГҐГЈГ®, Г­Г ГµГіГ© Г®Г­ Г­Г Г¬ ГЇГіГ±ГІГ®Г© ГІГ® Г­ГіГ¦ГҐГ­
-    else-- ГҐГ±Г«ГЁ ГҐГ±ГІГј
-        local fileData = file:read("*a") -- Г·ГЁГІГ ГҐГ¬ ГґГ Г©Г«ГЁГЄ, Г§Г ГЇГЁГ±Г»ГўГ ГҐГ¬ ГўГ±ГҐ Гў ГЇГ Г°ГҐГ¬ГҐГ­Г­ГіГѕ
-        file:close()
-        admins = split(fileData, "\n") -- Г°Г Г§ГЎГЁГўГ ГҐГ¬ Г­Г  Г¬Г Г±Г±ГЁГў ГЇГ® Г±ГЁГ¬ГўГ®Г«Гі ГЇГҐГ°ГҐГ­Г®Г±Г  Г±ГІГ°Г®ГЄГЁ
-        print("{B22222}[AdminChecker]: {FFFFFF}ГЂГ¤Г¬ГЁГ­Г®Гў Г§Г ГЈГ°ГіГ¦ГҐГ­Г®: {008800}"..#admins) -- ГЇГ Г«ГЁГ¬Г±Гї Г± Г Г¤Г¬ГЁГ­ Г·ГҐГЄГҐГ°Г®Г¬ Гў ГЄГ®Г­Г±Г®Г«Гј (Г¬Г®Г¦Г­Г® ГіГ¤Г Г«ГЁГІГј)
-    end
+function checkIt() -- та самая функция
     
-    for k, val in pairs(online_admins) do online_admins[k] = nil end -- Г·ГЁГ±ГІГЁГ¬ Г®Г­Г«Г Г©Г­ Г Г¤Г¬ГЁГ­Г®Гў Г± ГЇГ°Г®ГёГ«Г®ГЈГ® Г°Г Г§Г 
+    for k, val in pairs(online_admins) do online_admins[k] = nil end -- чистим онлайн админов с прошлого раза
 
-    for i=0, 999 do -- Г¶ГЁГЄГ«, ГЇГҐГ°ГҐГЎГЁГ°Г ГҐГ¬ ГўГ±ГҐ Г Г©Г¤ГЁГёГ­ГЁГЄГЁ Г±ГҐГ°ГўГҐГ°Г 
-        if sampIsPlayerConnected(i) then -- ГЇГ°Г®ГўГҐГ°ГїГҐГ¬ ГЇГ®Г¤ГЄГ«ГѕГ·ГҐГ­Г® Г«ГЁ ГІГҐГ«Г® Г± Г¤Г Г­Г­Г»Г¬ Г Г©Г¤ГЁ
-            for k, val in pairs(admins) do -- Г§Г ГЇГ®Г«Г§Г ГҐГ¬ Гў ГҐГ№ГҐ Г®Г¤ГЁГ­ Г¶ГЁГЄГ« (Г¤Г , Г®Г·ГҐГ­Гј Г°Г Г¶ГЁГ®Г­Г Г«ГјГ­Г®), ГЇГҐГ°ГҐГЎГЁГ°Г ГҐГ¬ ГўГ±ГҐГµ Г Г¤Г¬ГЁГ­Г®Гў
-                if val:find(sampGetPlayerNickname(i)) then -- Г¤ГҐГ«Г ГҐГ¬ ГЇГ®ГЁГ±ГЄ ГЇГ® Г±ГІГ°Г®ГЄГҐ, Г  Г­ГҐ ГҐГҐ ГЇГ®Г«Г­Г®ГҐ Г±Г°Г ГўГ­ГҐГ­ГЁГҐ, ГЇГ®ГІГ®Г¬Гі Г·ГІГ® ГІГ Г¬ Г¬Г®ГЈГіГІ ГЎГ»ГІГј ГЇГ°Г®ГЎГҐГ«Г»
-                    online_admins[#online_admins+1] = sampGetPlayerNickname(i).." [ID: "..i.."]" -- Г¤Г®ГЎГ ГўГ«ГїГҐГ¬ Гў Г¬Г Г±Г±ГЁГў Г®Г­Г«Г Г©Г­ Г Г¤Г¬ГЁГ­Г®Гў Г­Г  Г±ГҐГ°ГўГҐГ°ГҐ 
+    for i=0, 999 do -- цикл, перебираем все айдишники сервера
+        if sampIsPlayerConnected(i) then -- проверяем подключено ли тело с данным айди
+            for k, val in pairs(admins) do -- заползаем в еще один цикл (да, очень рационально), перебираем всех админов
+                if val:find(sampGetPlayerNickname(i)) then -- делаем поиск по строке, а не ее полное сравнение, потому что там могут быть пробелы
+                    online_admins[#online_admins+1] = sampGetPlayerNickname(i).." [ID: "..i.."]" -- добавляем в массив онлайн админов на сервере 
                 end
             end
         end
     end
 
-    sampAddChatMessage(" ГЂГ¤Г¬ГЁГ­Г» Online:", 0xffff00) -- Г±Г®Г®ГЎГ№ГҐГ­ГЁГҐ
-    for k, val in pairs(online_admins) do  -- Г¶ГЁГЄГ« Г®Г­Г«Г Г©Г­ Г Г¤Г¬ГЁГ­Г®Гў
-        sampAddChatMessage(" "..val, 0xf5deb3) -- ГўГ»ГўГ®Г¤ГЁГ¬ Г Г¤Г¬ГЁГ­Г 
+    sampAddChatMessage(" Админы Online:", 0xffff00) -- сообщение
+    for k, val in pairs(online_admins) do  -- цикл онлайн админов
+        sampAddChatMessage(" "..val, 0xf5deb3) -- выводим админа
     end
 
 end
 
 
-function split(inputstr, sep)  -- Г±ГЇГЁГ§Г¦ГҐГ­Г­Г Гї ГґГіГ­ГЄГ¶ГЁГї Г±ГЇГ«ГЁГІГ  Г± ГЁГ­ГІГҐГ°Г­ГҐГІГ  https://stackoverflow.com/questions/1426954/split-string-in-lua
+function split(inputstr, sep)  -- спизженная функция сплита с интернета https://stackoverflow.com/questions/1426954/split-string-in-lua
     if sep == nil then
             sep = "%s"
     end
